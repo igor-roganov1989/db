@@ -23,14 +23,37 @@
 		public  $ciblock_el;
 		
 		protected  function __construct(){
-		
-			$this->ciblock_el = CIBlockElement::GetList(
-				[],
-				['IBLOCK_ID'=>self::IBLOCK_SITE_CONTENT,'ACTIVE'=>'Y','=PROPERTY_URL'=>$_SERVER['HTTP_HOST']],
-				false,
-				false,
-				['IBLOCK_ID','ID','NAME','IBLOCK_SECTION_ID']
-			)->GetNextElement();
+			$cache = Cache::createInstance(); // Служба кеширования
+
+			$cachePath = 'mycachepath'; // папка, в которой лежит кеш
+			$cacheTtl = 3600; // срок годности кеша (в секундах)
+			$cacheKey = $_SERVER['HTTP_HOST']; // имя кеша
+			 
+			if ($cache->initCache($cacheTtl, $cacheKey, $cachePath))
+			{
+				$this->ciblock_el = $cache->getVars(); // Получаем переменные
+			}
+			elseif ($cache->startDataCache())
+			{
+			
+				$this->ciblock_el = CIBlockElement::GetList(
+					[],
+					['IBLOCK_ID'=>self::IBLOCK_SITE_CONTENT,'ACTIVE'=>'Y','=PROPERTY_URL'=>$_SERVER['HTTP_HOST']],
+					false,
+					false,
+					['IBLOCK_ID','ID','NAME','IBLOCK_SECTION_ID']
+				)->GetNextElement();
+				
+				$vars = [
+					 $this->ciblock_el,
+				];
+				 
+				// Всё хорошо, записываем кеш
+				$cache->endDataCache($vars);
+			}
+
+			
+			
 		}
 		
 		public static function getInstance()
@@ -77,36 +100,3 @@
 			
 		}
 	}
-	
-	
-	
-	
-	/*class IblockSiteContent{
-		
-		private const IBLOCK_SITE_CONTENT = 7;
-		public $iblock_inst;
-		
-		public function __construct(){
-			$this->getCIblockElement();
-		}
-		
-		public function getFields(){
-			return $this->iblock_inst->GetFields();
-		}
-		
-		public function getProperties(){
-			return $this->iblock_inst->GetProperties();
-		}
-		
-		public  function getCIblockElement(){
-			$this->iblock_inst = CIBlockElement::GetList(
-				[],
-				['IBLOCK_ID'=>self::IBLOCK_SITE_CONTENT,'ACTIVE'=>'Y','=PROPERTY_URL'=>$_SERVER['HTTP_HOST']],
-				false,
-				false,
-				['IBLOCK_ID','ID','NAME']
-			)->GetNextElement();
-			
-		}
-	}*/
-	?>
